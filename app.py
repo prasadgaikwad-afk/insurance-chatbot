@@ -168,6 +168,7 @@ def main():
                             chunks.extend(pdf_chunks)
                             doc_sources.extend([f"pdf{idx+1}"] * len(pdf_chunks))
 
+                    # Ensure embeddings are created on CPU
                     store_embeddings(chunks, embedding_model, doc_sources)
                     st.session_state.pdf_names = [pdf_files[0].name, pdf_files[1].name]
                 st.write("Chatbot is ready. Ask your questions!")
@@ -183,8 +184,8 @@ def main():
                 response = generate_gemma_comparison(query, retrieved_docs)
                 st.write(f"**Question:** {query}")
                 st.write(f"**Answer:** {response}")
-                st.write(f"**Policy 1: {st.session_state.pdf_names[0]} (ICICI Lombard)**")
-                st.write(f"**Policy 2: {st.session_state.pdf_names[1]} (HDFC Life Insurance)**")
+                st.write(f"**Policy 1: {st.session_state.pdf_names[0]} (ICICI Lombard))")
+                st.write(f"**Policy 2: {st.session_state.pdf_names[1]} (HDFC Life Insurance))")
     elif pdf_files:
         st.warning("Please upload exactly two PDF files.")
     else:
