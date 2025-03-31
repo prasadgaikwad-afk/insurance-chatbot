@@ -12,6 +12,7 @@ import os
 import re
 import textwrap
 
+os.system("pip install -r requirements.txt")
 # Replace with your Groq API key
 GROQ_API_KEY = "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"
 FAISS_INDEX_PATH = "faiss_index.index"
