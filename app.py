@@ -1,3 +1,6 @@
+import os 
+os.system("pip install -r requirements.txt")
+
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
@@ -8,11 +11,9 @@ from transformers import pipeline
 import csv
 from groq import Groq
 import tempfile
-import os
 import re
 import textwrap
 
-os.system("pip install -r requirements.txt")
 # Replace with your Groq API key
 GROQ_API_KEY = "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"
 FAISS_INDEX_PATH = "faiss_index.index"
