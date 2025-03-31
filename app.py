@@ -1,17 +1,13 @@
-import os 
-print('Installing Packeges!!!')
-os.system("pip install -r requirement.txt")
-
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import faiss
 import numpy as np
-from transformers import pipeline
 import csv
 from groq import Groq
 import tempfile
+import os
 import re
 import textwrap
 
