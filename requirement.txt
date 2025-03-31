@@ -1,0 +1,13 @@
+faiss-cpu==1.10.0
+groq==0.17.0
+langchain==0.3.18
+langchain-aws==0.2.12
+langchain-community==0.3.17
+langchain-core==0.3.35
+langchain-google-genai==2.0.9
+langchain-groq==0.2.4
+langchain-huggingface==0.1.2
+langchain-text-splitters==0.3.6
+PyMuPDF==1.25.4
+streamlit==1.42.2
+streamlit-chat==0.1.1
