@@ -51,4 +51,5 @@ This Streamlit application is designed to compare two insurance policy documents
 
 
 ## Workflow
-![Chatbot_Workflow](https://github.com/user-attachments/assets/39349495-7b8b-4e01-8d83-0d674803f74f)
+
+![Workflow](https://github.com/user-attachments/assets/cac679ce-dd7d-4640-8e29-da8cce1fda68)
