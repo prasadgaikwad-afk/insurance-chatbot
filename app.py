@@ -1,5 +1,6 @@
 import os 
-os.system("pip install -r requirements.txt")
+print('Installing Packeges!!!')
+os.system("pip install -r requirement.txt")
 
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
