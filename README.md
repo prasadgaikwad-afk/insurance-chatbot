@@ -1,4 +1,4 @@
-# Insurance Policy Comparison Chatbot - Coding Exam Assignment
+# Insurance Policy Comparison Chatbot for HDFC Life and ICICI Lombard
 
 ## Overview
 
