@@ -21,10 +21,10 @@ This Streamlit application is designed to compare two insurance policy documents
     ```
 2.  **Obtain Groq API Key:**
     -   Sign up for a Groq account and obtain your API key.
-    -   Replace `"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"` with your actual Groq API key in the `GROQ_API_KEY` variable within the script.
+    -   Replace with your actual Groq API key in the `GROQ_API_KEY` variable within the script.
 3.  **Run the Streamlit App:**
     ```bash
-    streamlit run your_script_name.py
+    streamlit run app.py
     ```
 
 ## Usage
