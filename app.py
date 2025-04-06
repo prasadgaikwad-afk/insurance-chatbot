@@ -1,10 +1,8 @@
 import os
-os.environ["TORCH_DISABLE_WATCHDOG_WARNINGS"] = "1"
-os.environ['TRANSFORMERS_OFFLINE'] = '0'
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 import faiss
 import numpy as np
 from transformers import pipeline
@@ -14,13 +12,25 @@ import tempfile
 
 import re
 import textwrap
-from accelerate import init_empty_weights  # Import the missing function
 
 # Replace with your Groq API key
 GROQ_API_KEY = "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"
 FAISS_INDEX_PATH = "faiss_index.index"
 METADATA_PATH = "metadata.csv"
 
+def store_embeddings(chunks, embedding_model, doc_sources):
+    """Stores text chunks and their embeddings in FAISS and metadata in CSV."""
+    embeddings = embedding_model.embed_documents(chunks)
+    vector_dimension = len(embeddings[0])
+    index = faiss.IndexFlatL2(vector_dimension)
+    index.add(np.array(embeddings, dtype=np.float32))
+    faiss.write_index(index, FAISS_INDEX_PATH)
+
+    with open(METADATA_PATH, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['source', 'content'])
+        for source, content in zip(doc_sources, chunks):
+            writer.writerow([source, content])
 
 def process_pdfs(pdf_files):
     """Processes uploaded PDF files and returns their processed text."""
@@ -126,49 +136,37 @@ def generate_gemma_comparison(query, results, max_context_length=1500):
     pdf1_results = truncate_or_summarize(pdf1_results)
     pdf2_results = truncate_or_summarize(pdf2_results)
 
-    pdf1_context = "\n".join(pdf1_results) if pdf1_results else "No relevant information found in ICICI Lombard Health Insurance."
-    pdf2_context = "\n".join(pdf2_results) if pdf2_results else "No relevant information found in HDFC Life Insurance."
+    pdf1_context = "\n".join(pdf1_results) if pdf1_results else "No relevant information found in the first uploaded document."
+    pdf2_context = "\n".join(pdf2_results) if pdf2_results else "No relevant information found in the second uploaded document."
 
     prompt = f"""
-    [INST] You are an expert insurance comparison assistant. Given the following summaries from two health insurance policy documents, analyze and compare their coverage, exclusions, pricing, and additional benefits.
+    [INST] You are an expert insurance comparison assistant. Given the following information from two policy documents, analyze and compare their coverage, exclusions, pricing, and additional benefits based on the user's question.
 
-    ICICI Lombard Health Insurance Information:
+    Document 1 Information:
     {pdf1_context}
 
-    HDFC Life Insurance Information:
+    Document 2 Information:
     {pdf2_context}
 
     User Question: {query}
 
     **Step-by-Step Analysis (Chain of Thought Technique):**
-    1. **Coverage Analysis**: Identify the types of health coverage provided by each policy. Highlight key similarities and differences.
-    2. **Exclusions**: List exclusions mentioned in each policy and compare their impact on policyholders.
-    3. **Pricing & Deductibles**: If available, compare premium costs, deductibles, and additional fees.
-    4. **Flexibility & Additional Benefits**: Check for added benefits like coverage for remote workers, international travel coverage, telemedicine, etc.
-    5. **Final Comparison**: Summarize key differences and similarities and provide a well-structured conclusion.
+    1. **Identify Relevant Information**: Find the sections in each document that address the user's question.
+    2. **Compare Coverage**: Detail the coverage offered by each policy related to the query.
+    3. **Highlight Differences**: Point out any significant differences or advantages of one policy over the other.
+    4. **Summarize**: Provide a concise summary answering the user's question based on the provided information.
 
     Based on this structured approach, generate a detailed comparative response.
     Comparison: [/INST]
     """
 
     client = Groq(api_key=GROQ_API_KEY)
-    chat_completion = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model="gemma2-9b-it")
-    response = chat_completion.choices[0].message.content.strip()
-    return response
-
-def store_embeddings(chunks, embedding_model, doc_sources):
-    """Stores text chunks and their embeddings in FAISS and saves metadata."""
-    embeddings = embedding_model.embed_documents(chunks)
-    dimension = embeddings[0].shape[0]
-    index = faiss.IndexFlatL2(dimension)
-    index.add(np.array(embeddings, dtype=np.float32))
-    faiss.write_index(index, FAISS_INDEX_PATH)
-
-    with open(METADATA_PATH, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(["source", "content"])
-        for source, chunk in zip(doc_sources, chunks):
-            writer.writerow([source, chunk])
+    try:
+        chat_completion = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model="gemma2-9b-it")
+        response = chat_completion.choices[0].message.content.strip()
+        return response
+    except Exception as e:
+        return f"Error generating response from Groq: {e}"
 
 def main():
     st.title("Insurance Policy Comparison Chatbot")
@@ -180,11 +178,7 @@ def main():
                 with st.spinner("Processing PDFs and creating embeddings..."):
                     pdf_texts = process_pdfs(pdf_files)
                     text_splitter = CharacterTextSplitter(chunk_size=1500, chunk_overlap=300)
-                    try:
-                        embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-                    except Exception as e:
-                        st.error(f"Error loading the embedding model: {e}")
-                        st.stop()
+                    embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
                     doc_sources = []
                     chunks = []
@@ -203,19 +197,18 @@ def main():
             st.write("Chatbot is ready. Ask your questions!")
 
         if 'pdf_names' in st.session_state:
-            try:
-                embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-            except Exception as e:
-                st.error(f"Error loading the embedding model: {e}")
-                st.stop()
+            embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
             query = st.chat_input("Ask a question about the insurance policies:")
             if query:
                 retrieved_docs = load_embeddings_and_search(query, embedding_model)
-                response = generate_gemma_comparison(query, retrieved_docs)
-                st.write(f"**Question:** {query}")
-                st.write(f"**Answer:** {response}")
-                st.write(f"**Policy 1: {st.session_state.pdf_names[0]} (ICICI Lombard)**")
-                st.write(f"**Policy 2: {st.session_state.pdf_names[1]} (HDFC Life Insurance)**")
+                if retrieved_docs:
+                    response = generate_gemma_comparison(query, retrieved_docs)
+                    st.write(f"**Question:** {query}")
+                    st.write(f"**Answer:** {response}")
+                    st.write(f"**Policy 1: {st.session_state.pdf_names[0]} (Document 1)**")
+                    st.write(f"**Policy 2: {st.session_state.pdf_names[1]} (Document 2)**")
+                else:
+                    st.warning("No relevant information found in the processed documents for your query.")
     elif pdf_files:
         st.warning("Please upload exactly two PDF files.")
     else:
