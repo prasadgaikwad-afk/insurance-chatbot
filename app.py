@@ -1,8 +1,10 @@
 import os
+os.environ["TORCH_DISABLE_WATCHDOG_WARNINGS"] = "1"
+os.environ['TRANSFORMERS_OFFLINE'] = '0'
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 import faiss
 import numpy as np
 from transformers import pipeline
@@ -19,8 +21,6 @@ GROQ_API_KEY = "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"
 FAISS_INDEX_PATH = "faiss_index.index"
 METADATA_PATH = "metadata.csv"
 
-# Explicitly set the environment variable to 0 to ensure online mode
-os.environ['TRANSFORMERS_OFFLINE'] = '0'
 
 def process_pdfs(pdf_files):
     """Processes uploaded PDF files and returns their processed text."""
@@ -181,7 +181,7 @@ def main():
                     pdf_texts = process_pdfs(pdf_files)
                     text_splitter = CharacterTextSplitter(chunk_size=1500, chunk_overlap=300)
                     try:
-                        embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+                        embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
                     except Exception as e:
                         st.error(f"Error loading the embedding model: {e}")
                         st.stop()
