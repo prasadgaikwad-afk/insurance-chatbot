@@ -13,4 +13,3 @@ langchain-text-splitters==0.3.6
 PyMuPDF==1.25.4
 streamlit==1.42.2
 streamlit-chat==0.1.1
-sentence-transformers==2.2.2
