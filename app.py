@@ -1,6 +1,7 @@
 import os
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
+from sentence_transformers import SentenceTransformer
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
