@@ -12,6 +12,7 @@ import tempfile
 
 import re
 import textwrap
+from accelerate import init_empty_weights  # Import the missing function
 
 # Replace with your Groq API key
 GROQ_API_KEY = "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"
