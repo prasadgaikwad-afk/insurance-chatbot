@@ -5,7 +5,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import faiss
 import numpy as np
-from transformers import pipeline
+from transformers import AutoTokenizer, AutoModel
 import csv
 from groq import Groq
 import tempfile
@@ -17,6 +17,21 @@ import textwrap
 GROQ_API_KEY = "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"
 FAISS_INDEX_PATH = "faiss_index.index"
 METADATA_PATH = "metadata.csv"
+LOCAL_MODEL_DIR = "local_models/all-MiniLM-L6-v2"
+
+def download_model_if_not_exists():
+    """Downloads the Hugging Face model to the local repository if it doesn't exist."""
+    if not os.path.exists(LOCAL_MODEL_DIR):
+        st.info(f"Downloading 'sentence-transformers/all-MiniLM-L6-v2' to '{LOCAL_MODEL_DIR}'...")
+        try:
+            AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2", cache_dir=LOCAL_MODEL_DIR)
+            AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2", cache_dir=LOCAL_MODEL_DIR)
+            st.success(f"Model downloaded successfully to '{LOCAL_MODEL_DIR}'.")
+        except Exception as e:
+            st.error(f"Error downloading model: {e}")
+            st.stop()
+    else:
+        st.info(f"Model found locally at '{LOCAL_MODEL_DIR}'.")
 
 def store_embeddings(chunks, embedding_model, doc_sources):
     """Stores text chunks and their embeddings in FAISS and metadata in CSV."""
@@ -172,13 +187,17 @@ def main():
     st.title("Insurance Policy Comparison Chatbot")
     pdf_files = st.file_uploader("Upload two PDF files", type="pdf", accept_multiple_files=True)
 
+    # Download the model if it doesn't exist locally
+    download_model_if_not_exists()
+
     if pdf_files and len(pdf_files) == 2:
         if not os.path.exists(FAISS_INDEX_PATH) or not os.path.exists(METADATA_PATH):
             if st.button("Process PDFs and Start Chat"):
                 with st.spinner("Processing PDFs and creating embeddings..."):
                     pdf_texts = process_pdfs(pdf_files)
                     text_splitter = CharacterTextSplitter(chunk_size=1500, chunk_overlap=300)
-                    embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+                    # Load the embeddings model from the local directory
+                    embedding_model = HuggingFaceEmbeddings(model_name=LOCAL_MODEL_DIR)
 
                     doc_sources = []
                     chunks = []
@@ -197,7 +216,8 @@ def main():
             st.write("Chatbot is ready. Ask your questions!")
 
         if 'pdf_names' in st.session_state:
-            embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+            # Load the embeddings model from the local directory for querying as well
+            embedding_model = HuggingFaceEmbeddings(model_name=LOCAL_MODEL_DIR)
             query = st.chat_input("Ask a question about the insurance policies:")
             if query:
                 retrieved_docs = load_embeddings_and_search(query, embedding_model)
