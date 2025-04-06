@@ -1,4 +1,5 @@
 pip>=23.0
+sentence-transformers==2.2.2
 setuptools>=67.0
 faiss-cpu==1.7.4
 groq==0.17.0
