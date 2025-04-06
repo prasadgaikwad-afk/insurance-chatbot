@@ -1,30 +1,24 @@
-import os
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
-
-from sentence_transformers import SentenceTransformer
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import faiss
 import numpy as np
+from transformers import pipeline
 import csv
 from groq import Groq
 import tempfile
+import os
 import re
 import textwrap
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
-model.save("./models/all-MiniLM-L6-v2-local")
-print("Model saved to ./models/all-MiniLM-L6-v2-local")
 
 # Replace with your Groq API key
 GROQ_API_KEY = "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"
 FAISS_INDEX_PATH = "faiss_index.index"
 METADATA_PATH = "metadata.csv"
 
-
 def process_pdfs(pdf_files):
+    """Processes uploaded PDF files and returns their processed text."""
     processed_texts = []
     for pdf_file in pdf_files:
         try:
@@ -45,8 +39,8 @@ def process_pdfs(pdf_files):
             processed_texts.append("")
     return processed_texts
 
-
 def clean_text(text):
+    """Enhanced text cleaning function."""
     if not text:
         return ""
     text = " ".join(text.split())
@@ -56,8 +50,8 @@ def clean_text(text):
     text = re.sub(r'\s*–\s*', '-', text)
     return text.strip()
 
-
 def summarize_text(text):
+    """Summarizes text using Groq's Gemma-7B-IT model."""
     if not text:
         return ""
 
@@ -87,22 +81,8 @@ def summarize_text(text):
     else:
         return get_summary(text)
 
-
-def store_embeddings(text_chunks, embedding_model, sources):
-    vectors = [embedding_model.embed_query(text) for text in text_chunks]
-    dimension = len(vectors[0])
-    index = faiss.IndexFlatL2(dimension)
-    index.add(np.array(vectors, dtype=np.float32))
-    faiss.write_index(index, FAISS_INDEX_PATH)
-
-    with open(METADATA_PATH, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(['source', 'chunk'])
-        for source, chunk in zip(sources, text_chunks):
-            writer.writerow([source, chunk])
-
-
 def load_embeddings_and_search(query, embedding_model, k=5):
+    """Loads embeddings from FAISS and performs a search."""
     index = faiss.read_index(FAISS_INDEX_PATH)
     query_embedding = embedding_model.embed_query(query)
     distances, indices = index.search(np.array([query_embedding], dtype=np.float32), k)
@@ -117,8 +97,8 @@ def load_embeddings_and_search(query, embedding_model, k=5):
                 results.append((all_data[i][0], all_data[i][1], distances[0][list(indices[0]).index(i)]))
     return results
 
-
 def generate_gemma_comparison(query, results, max_context_length=1500):
+    """Generates a comparison response using Gemma2-9b-it based on retrieved data, with length constraints."""
     pdf1_results = [result[1] for result in results if result[0] == 'pdf1']
     pdf2_results = [result[1] for result in results if result[0] == 'pdf2']
 
@@ -164,7 +144,6 @@ def generate_gemma_comparison(query, results, max_context_length=1500):
     response = chat_completion.choices[0].message.content.strip()
     return response
 
-
 def main():
     st.title("Insurance Policy Comparison Chatbot")
     pdf_files = st.file_uploader("Upload two PDF files", type="pdf", accept_multiple_files=True)
@@ -175,7 +154,7 @@ def main():
                 with st.spinner("Processing PDFs and creating embeddings..."):
                     pdf_texts = process_pdfs(pdf_files)
                     text_splitter = CharacterTextSplitter(chunk_size=1500, chunk_overlap=300)
-                    embedding_model = HuggingFaceEmbeddings(model_name="./models/all-MiniLM-L6-v2-local")
+                    embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
                     doc_sources = []
                     chunks = []
@@ -194,7 +173,7 @@ def main():
             st.write("Chatbot is ready. Ask your questions!")
 
         if 'pdf_names' in st.session_state:
-            embedding_model = HuggingFaceEmbeddings(model_name="./models/all-MiniLM-L6-v2-local")
+            embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
             query = st.chat_input("Ask a question about the insurance policies:")
             if query:
                 retrieved_docs = load_embeddings_and_search(query, embedding_model)
@@ -207,7 +186,6 @@ def main():
         st.warning("Please upload exactly two PDF files.")
     else:
         st.info("Please upload two PDF files to start.")
-
 
 if __name__ == "__main__":
     main()
