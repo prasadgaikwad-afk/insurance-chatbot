@@ -19,6 +19,9 @@ GROQ_API_KEY = "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"
 FAISS_INDEX_PATH = "faiss_index.index"
 METADATA_PATH = "metadata.csv"
 
+# Explicitly set the environment variable to 0 to ensure online mode
+os.environ['TRANSFORMERS_OFFLINE'] = '0'
+
 def process_pdfs(pdf_files):
     """Processes uploaded PDF files and returns their processed text."""
     processed_texts = []
@@ -152,6 +155,20 @@ def generate_gemma_comparison(query, results, max_context_length=1500):
     chat_completion = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model="gemma2-9b-it")
     response = chat_completion.choices[0].message.content.strip()
     return response
+
+def store_embeddings(chunks, embedding_model, doc_sources):
+    """Stores text chunks and their embeddings in FAISS and saves metadata."""
+    embeddings = embedding_model.embed_documents(chunks)
+    dimension = embeddings[0].shape[0]
+    index = faiss.IndexFlatL2(dimension)
+    index.add(np.array(embeddings, dtype=np.float32))
+    faiss.write_index(index, FAISS_INDEX_PATH)
+
+    with open(METADATA_PATH, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["source", "content"])
+        for source, chunk in zip(doc_sources, chunks):
+            writer.writerow([source, chunk])
 
 def main():
     st.title("Insurance Policy Comparison Chatbot")
