@@ -11,6 +11,6 @@ langchain-groq==0.2.4
 langchain-huggingface==0.1.2
 langchain-text-splitters==0.3.6
 PyMuPDF==1.25.4
-streamlit==1.42.2
+streamlit==1.40.0
 streamlit-chat==0.1.1
 transformers
