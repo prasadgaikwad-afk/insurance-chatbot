@@ -5,7 +5,6 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import faiss
 import numpy as np
-from transformers import pipeline
 import csv
 from groq import Groq
 import tempfile
