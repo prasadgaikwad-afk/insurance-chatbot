@@ -13,7 +13,7 @@ import re
 import textwrap
 
 # Replace with your Groq API key
-GROQ_API_KEY = "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"
+GROQ_API_KEY = "YOUR_GROQ_API_KEY"
 FAISS_INDEX_PATH = "faiss_index.index"
 METADATA_PATH = "metadata.csv"
 
